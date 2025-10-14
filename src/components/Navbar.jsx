@@ -1,7 +1,8 @@
 import React from 'react'
 import {useState} from "react"
-import { Link } from "react-router-dom"
+import { Link,Navigate } from "react-router-dom"
 import Connexion from "./Connexion"
+import Deconnexion from "./Deconnexion"
 function Navbar() {
 
   const [isLoggedIn, setIsLoggedIn]=useState(false)
@@ -55,7 +56,9 @@ function Navbar() {
             </button>
           </>
         ): (
-          <button onClick={()=>setIsLoggedIn(false)} className='bg-blue-500 text-white px-4 py-1.5 rounded-md hover:bg-blue-600'>Deconnexion</button>
+          <div>
+            <Deconnexion/>
+          </div> 
         )}
       </div>
 
