@@ -9,9 +9,9 @@ function Navbar() {
   }
 
   return (
-    <nav className="flex justify-between items-center px-10 py-4 bg-white border-b border-slate-100">
+    <nav className=" fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-10 py-4 bg-white border-b border-slate-100">
 
-      {/* Logo */}
+     
       <div className="flex items-center gap-2.5">
         <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
           <Database size={14} className="text-violet-500" />
@@ -19,15 +19,13 @@ function Navbar() {
         <span className="font-bold text-slate-800 text-base tracking-tight">DataVision</span>
       </div>
 
-      {/* Liens */}
+      
       <div className="hidden md:flex items-center gap-7 text-sm text-slate-500">
         <a href="#" onClick={() => scrollToSection("hero")}     className="hover:text-slate-800 transition-colors">Accueil</a>
-        <a href="#" onClick={() => scrollToSection("features")} className="hover:text-slate-800 transition-colors">Fonctionnalités</a>
         <a href="#" onClick={() => scrollToSection("about")}    className="hover:text-slate-800 transition-colors">À propos</a>
-        <a href="#" onClick={() => scrollToSection("contact")}  className="hover:text-slate-800 transition-colors">Support</a>
       </div>
 
-      {/* Boutons */}
+     
       <div className="flex items-center gap-3">
         <Link
           to="/connexion"

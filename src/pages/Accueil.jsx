@@ -1,16 +1,17 @@
 import React from 'react'
+import NavBar from "../components/Navbar"
 import Hero from "../components/Hero"
-import Features from "../components/Features"
+import Footer from "../components/Footer"
 import About from "../components/About"
-import Contact from "../components/Contact"
+
 function Accueil() {
    
   return (
     <div>
+        <NavBar/>
         <Hero/>
-        <Features/>
         <About/>
-        <Contact/>
+        <Footer/>
     </div>
   )
 }
