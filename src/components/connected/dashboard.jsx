@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
 import {
   LogOut, Upload, Search, ChevronLeft, ChevronRight,
   BarChart2, TrendingUp, PieChart as PieIcon, FileText,
-  AlertCircle, CheckCircle, Database
+  AlertCircle, CheckCircle, Database, Download
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -39,6 +40,9 @@ export default function Dashboard() {
   const [axeY, setAxeY] = useState("");
   const [graphiquesDisponibles, setGraphiquesDisponibles] = useState([]);
   const [dragging, setDragging] = useState(false);
+
+  // Ref sur le conteneur du graphique
+  const graphiqueRef = useRef(null);
 
   const ligneParPage = 10;
 
@@ -93,6 +97,23 @@ export default function Dashboard() {
       localStorage.setItem("historique", JSON.stringify(historique));
     };
     reader.readAsText(fileData);
+  };
+
+  // Fonction de téléchargement
+  const handleDownload = async () => {
+    if (!graphiqueRef.current) return;
+    try {
+      const canvas = await html2canvas(graphiqueRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2, // haute résolution
+      });
+      const link = document.createElement("a");
+      link.download = `graphique_${typeGraphique}_${axeX}_${axeY}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error("Erreur lors du téléchargement :", err);
+    }
   };
 
   if (!user) return null;
@@ -165,189 +186,202 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans">
+    <>
+      {/* Header */}
+      <div className="mb-6 sm:mb-8">
+        <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-1">
+          Tableau de bord
+        </p>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
+          Bonjour, {user.prenom}
+        </h1>
+      </div>
 
-      
+      {/* Import */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-5 sm:p-7 mb-5">
+        <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-1">Importation</p>
+        <h2 className="text-base font-semibold text-slate-800 mb-5">Importer un fichier CSV</h2>
 
-      {/* Main */}
-      <main className="flex-1 px-10 py-9 max-w-4xl">
-
-        {/* Header */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-1">Tableau de bord</p>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Bonjour, {user.prenom}</h1>
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-xl px-4 sm:px-6 py-6 sm:py-10 flex flex-col items-center gap-3 transition-colors ${
+            dragging ? "border-violet-300 bg-violet-50" : "border-slate-200 bg-slate-50"
+          }`}
+        >
+          <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+            <Upload size={18} className="text-violet-500" />
           </div>
-          
+          <p className="text-sm text-slate-500 text-center">
+            {fileData ? fileData.name : "Glissez votre fichier ici ou"}
+          </p>
+          <label className="text-sm font-semibold text-violet-500 cursor-pointer hover:text-violet-700 underline underline-offset-2">
+            Parcourir
+            <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+          </label>
         </div>
 
-        {/* Import */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-7 mb-5">
-          <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-1">Importation</p>
-          <h2 className="text-base font-semibold text-slate-800 mb-5">Importer un fichier CSV</h2>
-
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-xl px-6 py-10 flex flex-col items-center gap-3 transition-colors ${
-              dragging ? "border-violet-300 bg-violet-50" : "border-slate-200 bg-slate-50"
-            }`}
-          >
-            <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Upload size={18} className="text-violet-500" />
-            </div>
-            <p className="text-sm text-slate-500">
-              {fileData ? fileData.name : "Glissez votre fichier ici ou"}
-            </p>
-            <label className="text-sm font-semibold text-violet-500 cursor-pointer hover:text-violet-700 underline underline-offset-2">
-              Parcourir
-              <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-            </label>
+        {fileData && (
+          <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-slate-50 rounded-xl px-4 py-3">
+            <CheckCircle size={15} className="text-emerald-400 shrink-0" />
+            <span className="text-sm text-slate-500 flex-1 break-all">
+              {fileData.name} — {(fileData.size / 1024).toFixed(2)} KB
+            </span>
+            <button
+              onClick={handleFileSubmit}
+              className="w-full sm:w-auto bg-violet-500 hover:bg-violet-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+            >
+              Analyser
+            </button>
           </div>
+        )}
+      </div>
 
-          {fileData && (
-            <div className="mt-4 flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-3">
-              <CheckCircle size={15} className="text-emerald-400 shrink-0" />
-              <span className="text-sm text-slate-500 flex-1">{fileData.name} — {(fileData.size / 1024).toFixed(2)} KB</span>
-              <button
-                onClick={handleFileSubmit}
-                className="bg-violet-500 hover:bg-violet-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
-              >
-                Analyser
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Tableau */}
-        {tableData.length > 0 && (
-          <>
-            <div className="bg-white rounded-2xl border border-slate-100 p-7 mb-5">
-              <div className="flex justify-between items-start mb-5">
-                <div>
-                  <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-1">Données</p>
-                  <h2 className="text-base font-semibold text-slate-800">{tableData.length} entrées importées</h2>
-                </div>
-                <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
-                  <Search size={13} className="text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher..."
-                    value={searchItem}
-                    onChange={(e) => { setSearchItem(e.target.value); setCurrentPage(1); }}
-                    className="bg-transparent outline-none text-sm text-slate-600 placeholder-slate-400 w-44"
-                  />
-                </div>
+      {/* Tableau */}
+      {tableData.length > 0 && (
+        <>
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 sm:p-7 mb-5">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
+              <div>
+                <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-1">Données</p>
+                <h2 className="text-base font-semibold text-slate-800">{tableData.length} entrées importées</h2>
               </div>
+              <div className="w-full sm:w-auto flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+                <Search size={13} className="text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  value={searchItem}
+                  onChange={(e) => { setSearchItem(e.target.value); setCurrentPage(1); }}
+                  className="w-full bg-transparent outline-none text-sm text-slate-600 placeholder-slate-400"
+                />
+              </div>
+            </div>
 
-              <div className="overflow-x-auto max-h-80 rounded-xl border border-slate-100">
-                <table className="min-w-full text-sm">
-                  <thead className="sticky top-0 bg-slate-50">
-                    <tr>
-                      {Object.keys(tableData[0]).map((h, i) => (
-                        <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 border-b border-slate-100 whitespace-nowrap">
-                          {h}
-                        </th>
+            <div className="overflow-x-auto max-h-80 rounded-xl border border-slate-100">
+              <table className="min-w-full text-sm">
+                <thead className="sticky top-0 bg-slate-50">
+                  <tr>
+                    {Object.keys(tableData[0]).map((h, i) => (
+                      <th key={i} className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-slate-500 border-b border-slate-100 whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentRows.map((row, i) => (
+                    <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
+                      {Object.values(row).map((val, j) => (
+                        <td key={j} className="px-3 sm:px-4 py-2.5 text-slate-600 border-b border-slate-50 whitespace-nowrap">
+                          {val}
+                        </td>
                       ))}
                     </tr>
-                  </thead>
-                  <tbody>
-                    {currentRows.map((row, i) => (
-                      <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
-                        {Object.values(row).map((val, j) => (
-                          <td key={j} className="px-4 py-2.5 text-slate-600 border-b border-slate-50 whitespace-nowrap">
-                            {val}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex items-center justify-center gap-4 mt-4">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 transition-colors"
-                >
-                  <ChevronLeft size={14} className="text-slate-600" />
-                </button>
-                <span className="text-sm text-slate-500">Page {currentPage} / {totalPage}</span>
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPage))}
-                  disabled={currentPage === totalPage}
-                  className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 transition-colors"
-                >
-                  <ChevronRight size={14} className="text-slate-600" />
-                </button>
-              </div>
-            </div>
-
-            {/* Graphique */}
-            <div className="bg-white rounded-2xl border border-slate-100 p-7">
-              <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-1">Visualisation</p>
-              <h2 className="text-base font-semibold text-slate-800 mb-5">Générer un graphique</h2>
-
-              <div className="flex gap-4 flex-wrap mb-5">
-                <div className="flex flex-col gap-1.5 flex-1 min-w-40">
-                  <label className="text-xs font-semibold text-slate-500">Axe X — catégorie</label>
-                  <select
-                    value={axeX}
-                    onChange={(e) => setAxeX(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 bg-white outline-none focus:border-violet-300"
-                  >
-                    <option value="">Choisir une colonne</option>
-                    {entetes.map((h, i) => <option key={i} value={h}>{h}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5 flex-1 min-w-40">
-                  <label className="text-xs font-semibold text-slate-500">Axe Y — valeur numérique</label>
-                  <select
-                    value={axeY}
-                    onChange={(e) => setAxeY(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 bg-white outline-none focus:border-violet-300"
-                  >
-                    <option value="">Choisir une colonne</option>
-                    {entetes.map((h, i) => <option key={i} value={h}>{h}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {graphiquesDisponibles.length > 0 && (
-                <div className="flex gap-2 mb-4">
-                  {TYPES.filter((t) => graphiquesDisponibles.includes(t.value)).map(({ value, label, Icon }) => (
-                    <button
-                      key={value}
-                      onClick={() => setTypeGraphique(value)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                        typeGraphique === value
-                          ? "bg-violet-50 border-violet-200 text-violet-600"
-                          : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Icon size={14} />
-                      {label}
-                    </button>
                   ))}
-                </div>
-              )}
-
-              {axeX && axeY && (
-                <div className="flex items-center gap-2 mb-4">
-                  {graphiquesDisponibles.length > 0
-                    ? <><CheckCircle size={13} className="text-emerald-400" /><span className="text-xs text-slate-500">{graphiquesDisponibles.length} type(s) disponible(s)</span></>
-                    : <><AlertCircle size={13} className="text-red-400" /><span className="text-xs text-red-400">L'axe Y doit être numérique</span></>
-                  }
-                </div>
-              )}
-
-              <div className="mt-4">{genererGraphique()}</div>
+                </tbody>
+              </table>
             </div>
-          </>
-        )}
-      </main>
-    </div>
+
+            <div className="flex items-center justify-center gap-4 mt-4">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 transition-colors"
+              >
+                <ChevronLeft size={14} className="text-slate-600" />
+              </button>
+              <span className="text-sm text-slate-500">Page {currentPage} / {totalPage}</span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPage))}
+                disabled={currentPage === totalPage}
+                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 transition-colors"
+              >
+                <ChevronRight size={14} className="text-slate-600" />
+              </button>
+            </div>
+          </div>
+
+          {/* Graphique */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 sm:p-7">
+            <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-1">Visualisation</p>
+
+            {/* Titre + bouton télécharger */}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-semibold text-slate-800">Générer un graphique</h2>
+              {typeGraphique && graphiquesDisponibles.length > 0 && (
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-2 border border-slate-200 text-slate-500 hover:bg-slate-50 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                >
+                  <Download size={13} />
+                  Télécharger
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 mb-5">
+              <div className="flex flex-col gap-1.5 flex-1">
+                <label className="text-xs font-semibold text-slate-500">Axe X — catégorie</label>
+                <select
+                  value={axeX}
+                  onChange={(e) => setAxeX(e.target.value)}
+                  className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 bg-white outline-none focus:border-violet-300"
+                >
+                  <option value="">Choisir une colonne</option>
+                  {entetes.map((h, i) => <option key={i} value={h}>{h}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5 flex-1">
+                <label className="text-xs font-semibold text-slate-500">Axe Y — valeur numérique</label>
+                <select
+                  value={axeY}
+                  onChange={(e) => setAxeY(e.target.value)}
+                  className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 bg-white outline-none focus:border-violet-300"
+                >
+                  <option value="">Choisir une colonne</option>
+                  {entetes.map((h, i) => <option key={i} value={h}>{h}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {graphiquesDisponibles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {TYPES.filter((t) => graphiquesDisponibles.includes(t.value)).map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setTypeGraphique(value)}
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium border transition-colors ${
+                      typeGraphique === value
+                        ? "bg-violet-50 border-violet-200 text-violet-600"
+                        : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Icon size={14} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {axeX && axeY && (
+              <div className="flex items-center gap-2 mb-4">
+                {graphiquesDisponibles.length > 0
+                  ? <><CheckCircle size={13} className="text-emerald-400 shrink-0" /><span className="text-xs text-slate-500">{graphiquesDisponibles.length} type(s) disponible(s)</span></>
+                  : <><AlertCircle size={13} className="text-red-400 shrink-0" /><span className="text-xs text-red-400">L'axe Y doit être numérique</span></>
+                }
+              </div>
+            )}
+
+            {/* Conteneur du graphique avec ref */}
+            <div ref={graphiqueRef} className="mt-4 overflow-x-auto bg-white p-4 rounded-xl">
+              {genererGraphique()}
+            </div>
+
+          </div>
+        </>
+      )}
+    </>
   );
 }
